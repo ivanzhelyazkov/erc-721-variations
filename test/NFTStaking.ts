@@ -63,6 +63,24 @@ describe("NFTStaking", function () {
       expect(stake.nftCount).to.be.eq(3);
     });
 
+    it("should be able to stake nfts when already staked", async function () {
+      // approve tokens
+      await erc721.connect(user1).approve(nftStaking.address, 0)
+      await erc721.connect(user1).approve(nftStaking.address, 1)
+      await erc721.connect(user1).approve(nftStaking.address, 2)
+      await erc721.connect(user1).approve(nftStaking.address, 3)
+      await erc721.connect(user1).approve(nftStaking.address, 4)
+      // stake 3 nfts
+      await nftStaking.connect(user1).stake([0, 1, 2]);
+      let stake = await nftStaking.userStake(user1.address);
+      expect(stake.nftCount).to.be.eq(3);
+
+      // stake two more nfts
+      await nftStaking.connect(user1).stake([3, 4]);
+      stake = await nftStaking.userStake(user1.address);
+      expect(stake.nftCount).to.be.eq(5);
+    });
+
     it("should be able to claim rewards from the staking contract", async function () {
       // approve tokens
       await erc721.connect(user1).approve(nftStaking.address, 0)
@@ -153,5 +171,29 @@ describe("NFTStaking", function () {
       expect(stake.nftCount).to.be.eq(1);
       expect(nft0).to.be.eq(2);
     });
+
+    it('should revert unstaking if user hasn\'t staked before', async function () {
+      await expect(nftStaking.connect(user1).unstake([0])).to.be.revertedWithCustomError(nftStaking, 'NoStakeForUser');
+    })
+
+    it('should revert claiming reward if user hasn\'t staked before', async function () {
+      await expect(nftStaking.connect(user1).claimReward()).to.be.revertedWithCustomError(nftStaking, 'NoRewardForUser');
+    })
+
+    it('should revert unstaking if user attempts to unstake more nfts than he has', async function () {
+      // approve tokens
+      await erc721.connect(user1).approve(nftStaking.address, 0)
+      await erc721.connect(user1).approve(nftStaking.address, 1)
+      await erc721.connect(user1).approve(nftStaking.address, 2)
+      await nftStaking.connect(user1).stake([0, 1, 2]);
+
+      // expect unstaking 4 nfts to revert
+      await expect(nftStaking.connect(user1).unstake([0, 1, 2, 3])).to.be.revertedWithCustomError(nftStaking, 'WithdrawalTooBig');
+    })
+
+    it('should be able to calculate reward', async function () {
+      let reward = await nftStaking.calculateReward('0', '1');
+      expect(reward).to.be.gt(0);
+    })
   });
 });
