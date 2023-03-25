@@ -142,11 +142,18 @@ contract NFTStaking is IERC721Receiver {
     function _addNftsToArr(uint[] calldata arr, uint32[] memory currentNftArr) private pure returns (uint32[] memory) {
         // convert the first array to uint32
         uint32[] memory convertedArr = _convertToUint32Arr(arr);
+        uint32[] memory newArr = new uint32[](arr.length + currentNftArr.length);
+        // fill the first part of the array
+        for(uint i = 0 ; i < arr.length ; i++) {
+            newArr[i] = convertedArr[i];
+        }
         // fill the remaining array items with the current array of nfts user has staked 
-        uint startIdx = arr.length - 1;
+        uint startIdx = arr.length;
         uint endIdx = startIdx + currentNftArr.length;
+        uint currentArrIndex = 0;
         for(uint i = startIdx ; i < endIdx ; ++i) {
-            convertedArr[i] = currentNftArr[i];
+            newArr[i] = currentNftArr[currentArrIndex];
+            currentArrIndex++;
         }
         return convertedArr;
     }
